@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS employees (
+ id TEXT PRIMARY KEY NOT NULL,
+ code TEXT NOT NULL UNIQUE,
+ full_name TEXT NOT NULL,
+ email TEXT NOT NULL DEFAULT '',
+ password_hash TEXT NOT NULL,
+ active INTEGER NOT NULL DEFAULT 1,
+ must_change INTEGER NOT NULL DEFAULT 1,
+ session_version INTEGER NOT NULL DEFAULT 1,
+ legacy_user_id TEXT UNIQUE,
+ created TEXT NOT NULL
+);

@@ -3,18 +3,107 @@ import {spawn,spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {randomBytes,pbkdf2Sync} from 'node:crypto';
 import assert from 'node:assert/strict';
-const runtime=resolve('.sites-runtime/integration-'+Date.now());mkdirSync(runtime,{recursive:true});const salt=randomBytes(16).toString('hex');const hash='pbkdf2:100000:'+salt+':'+pbkdf2Sync('integration-only-pass',salt,100000,32,'sha256').toString('hex');const c=JSON.parse(readFileSync('dist/server/wrangler.json','utf8'));c.main=resolve('dist/server/index.js');c.assets={directory:resolve('dist/client')};c.d1_databases=[{binding:'DB',database_name:'test-db',database_id:'00000000-0000-4000-8000-000000000000'}];c.r2_buckets=[{binding:'BUCKET',bucket_name:'test-images'}];c.vars={...c.vars,SESSION_SECRET:randomBytes(48).toString('hex'),ADMIN_PASSWORD_HASH:hash};const config=resolve(runtime,'wrangler.json');writeFileSync(config,JSON.stringify(c));const tool=resolve('node_modules/wrangler/bin/wrangler.js');const env={...process.env,WRANGLER_LOG_PATH:resolve(runtime,'logs.log'),WRANGLER_REGISTRY_PATH:resolve(runtime,'dev-registry'),MINIFLARE_REGISTRY_PATH:resolve(runtime,'registry'),WRANGLER_SEND_METRICS:'false',CLOUDFLARE_CF_FETCH_ENABLED:'false'};
-for(const file of ['drizzle/0000_glamorous_wilson_fisk.sql','drizzle/0001_glossy_azazel.sql']){const r=spawnSync(process.execPath,[tool,'d1','execute','DB','--local','--config',config,'--persist-to',runtime+'/state','--file',file],{env,encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr)}
-let output='';const child=spawn(process.execPath,[tool,'dev','--local','--config',config,'--persist-to',runtime+'/state','--ip','127.0.0.1','--port','8799','--inspector-port','0'],{env,stdio:['ignore','pipe','pipe']});child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d);const base='http://127.0.0.1:8799';let ready=false;for(let n=0;n<20;n++){try{const r=await fetch(base,{signal:AbortSignal.timeout(1000)});if(r.ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,500));}if(!ready){child.kill();throw new Error('Preview unreachable: '+output.slice(-1600))}
+import {createServer} from 'node:net';
+import {emptyState,today} from '../lib/model.ts';
+import {signSession,sessionName} from '../lib/auth-core.ts';
+const runtime=resolve('.sites-runtime/integration-'+Date.now());mkdirSync(runtime,{recursive:true});
+const salt=randomBytes(16).toString('hex'),secret=randomBytes(48).toString('hex');
+const hash='pbkdf2:100000:'+salt+':'+pbkdf2Sync('integration-only-pass',salt,100000,32,'sha256').toString('hex');
+const c=JSON.parse(readFileSync('dist/server/wrangler.json','utf8'));
+c.main=resolve('dist/server/index.js');c.assets={directory:resolve('dist/client')};
+c.d1_databases=[{binding:'DB',database_name:'test-db',database_id:'00000000-0000-4000-8000-000000000000'}];
+c.r2_buckets=[{binding:'BUCKET',bucket_name:'test-images'}];
+c.vars={APP_AUTH_MODE:'email',SESSION_SECRET:secret,ADMIN_PASSWORD_HASH:hash};delete c.triggers;
+const config=resolve(runtime,'wrangler.json');writeFileSync(config,JSON.stringify(c));
+const tool=resolve('node_modules/wrangler/bin/wrangler.js');
+const env={...process.env,WRANGLER_LOG_PATH:resolve(runtime,'logs.log'),WRANGLER_REGISTRY_PATH:resolve(runtime,'dev-registry'),MINIFLARE_REGISTRY_PATH:resolve(runtime,'registry'),WRANGLER_SEND_METRICS:'false',CLOUDFLARE_CF_FETCH_ENABLED:'false'};
+function sql(...args){const r=spawnSync(process.execPath,[tool,'d1','execute','DB','--local','--config',config,'--persist-to',runtime+'/state',...args],{env,encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr||r.stdout);}
+for(const file of ['drizzle/0000_glamorous_wilson_fisk.sql','drizzle/0001_glossy_azazel.sql'])sql('--file',file);
+// Seed only the isolated local test database, including one account from the Gmail-era app.
+const seed=emptyState();seed.members=[{email:'legacy@example.com',role:'borrower'}];seed.counter=1;
+seed.orders=[{id:'M-000001',key:'old',userId:'email:legacy@example.com',userEmail:'legacy@example.com',name:'Legacy Person',customer:'Historical job',purpose:'Historical work',created:new Date().toISOString(),status:'completed',lines:[{itemId:'old-item',name:'Old tool',qty:1,returned:1,due:today(),condition:'Tốt'}],history:[]}];
+const seedSql="INSERT INTO warehouse(id,data,revision) VALUES('main','"+JSON.stringify(seed).replaceAll("'","''")+"',0);";
+writeFileSync(runtime+'/seed.sql',seedSql);sql('--file',runtime+'/seed.sql');
+const probe=createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));
+let output='';const child=spawn(process.execPath,[tool,'dev','--local','--config',config,'--persist-to',runtime+'/state','--ip','127.0.0.1','--port',String(port),'--inspector-port','0'],{env,stdio:['ignore','pipe','pipe']});
+child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d);
+const base='http://127.0.0.1:'+port;let ready=false;
+for(let n=0;n<40;n++){try{const r=await fetch(base,{signal:AbortSignal.timeout(1000)});if(r.ok){await r.arrayBuffer();ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,300));}
+if(!ready){child.kill();throw new Error('Preview unreachable: '+output.slice(-1600));}
+const call=async(path,body,cookie='')=>{
+ const r=await fetch(base+path,{signal:AbortSignal.timeout(10000),method:body?'POST':'GET',headers:{Connection:'close','Content-Type':'application/json',Origin:base,...(cookie?{Cookie:cookie}:{})},...(body?{body:JSON.stringify(body)}:{})});
+ const bytes=Buffer.from(await r.arrayBuffer());let j=null;try{j=JSON.parse(bytes.toString('utf8'));}catch{}return {r,j,bytes,cookie:r.headers.get('set-cookie')?.split(';')[0]||''};
+};
+const login=(employeeCode,password)=>call('/api/auth',{role:'borrower',employeeCode,password});
+let checks=0;const ok=(condition,label)=>{assert.ok(condition,label);checks++;console.log('PASS',label);};
 try{
-const auth=await fetch(base+'/api/auth',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:JSON.stringify({role:'admin',password:'integration-only-pass'})});const j=await auth.clone().json();assert.equal(auth.status,200,JSON.stringify(j));const admin=auth.headers.get('set-cookie').split(';')[0];
-const state=await fetch(base+'/api/warehouse',{headers:{Cookie:admin}});const data=await state.json();assert.equal(data.items.length,0);assert.equal(data.user.role,'admin');
-const action=async(body,cookie=admin)=>{const r=await fetch(base+'/api/warehouse',{method:'POST',headers:{'Content-Type':'application/json',Origin:base,Cookie:cookie},body:JSON.stringify(body)});return [r,await r.json()]};
-assert.equal((await action({type:'seed'}))[0].status,403);await action({type:'member',email:'test@gmail.com',role:'borrower'});await action({type:'addItem',item:{name:'Test tool',category:'Dụng cụ',total:2,condition:'Tốt',conditionImages:[]}});
-const userAuth=await fetch(base+'/api/auth',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:JSON.stringify({role:'borrower',email:' TEST@gmail.com ',displayName:'Kỹ sư kiểm thử'})});assert.equal(userAuth.status,200);const user=userAuth.headers.get('set-cookie').split(';')[0];let [r,d]=await action({type:'addItem',item:{name:'Denied',total:1}},user);assert.equal(r.status,400);assert.equal((await fetch(base+'/api/export',{headers:{Cookie:user}})).status,403);
-const exportFile=await fetch(base+'/api/export',{headers:{Cookie:admin}});assert.equal(exportFile.status,200);writeFileSync(runtime+'/sample.xlsx',Buffer.from(await exportFile.arrayBuffer()));
-let current=await (await fetch(base+'/api/warehouse',{headers:{Cookie:user}})).json();const id=current.items[0].id;[r,d]=await action({type:'borrow',key:'integration-borrow',customer:'Nội bộ',purpose:'Test',lines:[{itemId:id,qty:1,due:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'})}]},user);assert.equal(r.status,200,JSON.stringify(d));assert.equal(d.orders[0].status,'borrowed');const oid=d.orders[0].id;[r,d]=await action({type:'return',key:'integration-return',id:oid,lines:[{itemId:id,qty:1,bad:0}]},user);assert.equal(r.status,200);assert.equal(d.items[0].available,2);await action({type:'removeMember',email:'test@gmail.com'});assert.equal((await fetch(base+'/api/warehouse',{headers:{Cookie:user}})).status,403);
-console.log('Integration passed: blank cloud, admin/user login, roles, direct borrow/return, Excel, revoked Gmail.');
-}finally{child.kill();}
+ console.log('Local worker ready; checking employee authentication.');
+ let x=await call('/api/auth',{role:'admin',password:'integration-only-pass'});assert.equal(x.r.status,200);const admin=x.cookie;
+ x=await call('/api/warehouse',undefined,admin);assert.equal(x.j.user.displayName,'Admin');assert.equal(x.j.items.length,0);
+ assert.equal((await call('/api/employees')).r.status,403);
+ assert.equal((await call('/api/auth',{role:'borrower',email:'legacy@example.com'})).r.status,401);
+ const oldToken=await signSession({userId:'email:legacy@example.com',email:'legacy@example.com',displayName:'Old cookie',role:'borrower',version:'',exp:Date.now()+86400000},secret);
+ assert.equal((await call('/api/warehouse',undefined,sessionName+'='+oldToken)).r.status,401);
+ ok(true,'Legacy email login/cookies cannot bypass employee credentials');
+ const employee=async body=>call('/api/employees',body,admin);
+ x=await employee({action:'create',code:'nv001',name:'Nguyễn Văn An',email:'an@example.com',password:'initial-pass-1',role:'admin'});assert.equal(x.r.status,200,JSON.stringify(x.j));
+ const id=x.j.employees[0].id;assert.equal(x.j.employees[0].code,'NV001');
+ ok(!JSON.stringify(x.j).includes('pbkdf2:')&&!('role' in x.j.employees[0]),'Employee lists expose neither hashes nor roles');
+ assert.equal((await employee({action:'create',code:' NV001 ',name:'Duplicate',password:'initial-pass-1'})).r.status,400);
+ assert.equal((await employee({action:'create',code:'bad code',name:'Bad Person',password:'initial-pass-1'})).r.status,400);
+ assert.equal((await employee({action:'create',code:'BADMAIL',name:'Bad Person',email:'invalid',password:'initial-pass-1'})).r.status,400);
+ assert.equal((await employee({action:'create',code:'SHORT',name:'Bad Person',password:'123'})).r.status,400);
+ assert.equal((await login('NV001','wrong')).r.status,401);
+ x=await login(' nv001 ','initial-pass-1');assert.equal(x.r.status,200);assert.equal(x.j.mustChangePassword,true);let user=x.cookie,initial=user;
+ x=await call('/api/warehouse',undefined,user);assert.equal(x.j.user.mustChangePassword,true);assert.equal(x.j.items.length,0);
+ assert.equal((await call('/api/warehouse',{type:'borrow'},user)).r.status,403);
 
-
+ assert.equal((await call('/api/files?id=11111111-1111-1111-1111-111111111111',undefined,user)).r.status,401);
+ assert.equal((await call('/api/employees',undefined,user)).r.status,403);
+ assert.equal((await call('/api/password',{currentPassword:'bad',newPassword:'new-password-1'},user)).r.status,400);
+ assert.equal((await call('/api/password',{currentPassword:'initial-pass-1',newPassword:'initial-pass-1'},user)).r.status,400);
+ x=await call('/api/password',{currentPassword:'initial-pass-1',newPassword:'new-password-1'},user);assert.equal(x.r.status,200,JSON.stringify(x.j));user=x.cookie;
+ assert.equal((await call('/api/warehouse',undefined,initial)).r.status,401);
+ x=await call('/api/warehouse',undefined,user);assert.equal(x.j.user.employeeCode,'NV001');assert.equal(x.j.user.mustChangePassword,false);
+ ok(true,'First-login password change is enforced by every protected API and rotates sessions');
+ assert.equal((await call('/api/warehouse',{type:'addItem',item:{name:'Denied',total:1}},user)).r.status,400);
+ assert.equal((await call('/api/export',undefined,user)).r.status,403);
+ assert.equal((await call('/api/warehouse',{type:'seed'},admin)).r.status,403);
+ x=await call('/api/warehouse',{type:'addItem',item:{name:'Test tool',category:'Dụng cụ',total:3,condition:'Tốt',conditionImages:[]}},admin);assert.equal(x.r.status,200);const itemId=x.j.items[0].id;
+ const borrow={type:'borrow',key:'test-borrow',customer:'Job A',purpose:'Service',lines:[{itemId,qty:2,due:today()}]};
+ x=await call('/api/warehouse',borrow,user);assert.equal(x.r.status,200);const orderId=x.j.orders[0].id;assert.equal(x.j.items[0].available,1);
+ x=await call('/api/warehouse',borrow,user);assert.equal(x.j.items[0].available,1);
+ x=await call('/api/warehouse',{type:'return',id:orderId,key:'partial',lines:[{itemId,qty:1,bad:0}]},user);assert.equal(x.r.status,200);assert.equal(x.j.items[0].available,2);
+ x=await call('/api/export',undefined,admin);assert.equal(x.r.status,200);writeFileSync(runtime+'/sample.xlsx',x.bytes);
+ ok(true,'Borrowing, partial returns, idempotency, and Excel still work with employee IDs');
+ x=await employee({action:'resetPassword',id,password:'reset-pass-2'});assert.equal(x.r.status,200);assert.equal((await call('/api/warehouse',undefined,user)).r.status,401);
+ assert.equal((await login('NV001','new-password-1')).r.status,401);
+ x=await login('NV001','reset-pass-2');assert.equal(x.j.mustChangePassword,true);user=x.cookie;
+ x=await call('/api/password',{currentPassword:'reset-pass-2',newPassword:'permanent-pass-3'},user);assert.equal(x.r.status,200);user=x.cookie;
+ x=await employee({action:'update',id,code:'NV009',name:'Nguyễn Văn An mới',email:'new@example.com'});assert.equal(x.r.status,200);
+ x=await call('/api/warehouse',undefined,user);assert.equal(x.j.user.employeeCode,'NV009');assert.equal(x.j.user.email,'new@example.com');assert.equal(x.j.orders[0].id,orderId);
+ assert.equal((await login('NV001','permanent-pass-3')).r.status,401);
+ x=await login('NV009','permanent-pass-3');assert.equal(x.r.status,200);user=x.cookie;
+ await employee({action:'setActive',id,active:false});assert.equal((await call('/api/warehouse',undefined,user)).r.status,401);assert.equal((await login('NV009','permanent-pass-3')).r.status,403);
+ await employee({action:'setActive',id,active:true});assert.equal((await call('/api/warehouse',undefined,user)).r.status,401);
+ x=await login('NV009','permanent-pass-3');assert.equal(x.r.status,200);user=x.cookie;
+ x=await call('/api/warehouse',undefined,user);assert.equal(x.j.orders[0].id,orderId);
+ ok(true,'Reset, lock/unlock revoke old sessions; code/email edits preserve order ownership');
+ x=await employee({action:'create',code:'NOEMAIL',name:'No Email Person',email:'',password:'initial-pass-2'});assert.equal(x.r.status,200);x=await login('NOEMAIL','initial-pass-2');let other=x.cookie;
+ x=await call('/api/password',{currentPassword:'initial-pass-2',newPassword:'other-new-pass'},other);assert.equal(x.r.status,200);other=x.cookie;
+ x=await call('/api/warehouse',undefined,other);assert.equal(x.j.user.email,'');assert.equal(x.j.orders.length,0);
+ assert.equal((await call('/api/warehouse',{type:'return',id:orderId,key:'unauthorized',lines:[{itemId,qty:1}]},other)).r.status,400);
+ assert.equal((await call('/api/employees',{action:'setActive',id,active:true},other)).r.status,403);
+ ok(true,'Email is optional; employees cannot administer accounts or access other loans');
+ x=await employee({action:'create',code:'OLD01',name:'Legacy Person',email:'updated@example.com',legacyEmail:'legacy@example.com',password:'legacy-initial-pass'});assert.equal(x.r.status,200,JSON.stringify(x.j));
+ x=await login('OLD01','legacy-initial-pass');const legacyInitial=x.cookie;
+ x=await call('/api/password',{currentPassword:'legacy-initial-pass',newPassword:'legacy-new-pass'},legacyInitial);assert.equal(x.r.status,200);
+ x=await call('/api/warehouse',undefined,x.cookie);assert.equal(x.j.orders[0].id,'M-000001');assert.equal(x.j.user.userId,'email:legacy@example.com');assert.equal(x.j.user.email,'updated@example.com');
+ x=await call('/api/employees',undefined,admin);assert.equal(x.j.legacyAccounts.length,0);
+ assert.equal((await employee({action:'create',code:'OLD02',name:'Other Legacy',legacyEmail:'legacy@example.com',password:'legacy-second-pass'})).r.status,400);
+ ok(true,'Gmail-era account migration preserves history and can only be claimed once');
+ assert.equal((await call('/api/profile',{displayName:'Bypass'},user)).r.status,410);
+ const cross=await fetch(base+'/api/employees',{method:'POST',headers:{Origin:'https://evil.example',Cookie:admin,'Content-Type':'application/json'},body:JSON.stringify({action:'setActive',id,active:false})});assert.equal(cross.status,403);
+ ok(true,'Old profile registration is disabled and cross-origin mutations are denied');
+ console.log('PASS '+checks+' integrated employee, security, migration and warehouse scenarios.');
+}catch(error){console.log(output.slice(-2500));throw error;}finally{if(process.platform==='win32')spawnSync('taskkill.exe',['/PID',String(child.pid),'/T','/F'],{stdio:'ignore'});else child.kill();}

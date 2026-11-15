@@ -130,3 +130,22 @@ main{padding-top:28px}.pageintro{margin-bottom:24px}.pageintro h1{font-size:30px
  .bottomnav button.active:before{background:var(--accent)}
  .loginpage{background:linear-gradient(#181a1c99,#181a1c99),url('/makino-machining.jpg') center/cover}
 }
+
+/* Employee management stays readable on phones via a contained horizontal table. */
+.employee-panel{grid-column:1/-1;min-width:0}
+.employee-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.employee-heading h2{margin-bottom:8px}.employee-heading p{margin:0;font-size:12px}
+.employee-heading>.primary{flex-shrink:0;font-size:12px}
+.employee-form{padding:20px;background:#f5f7f9;border:1px solid var(--line);border-radius:8px;margin:18px 0}
+.employee-form h3{margin-bottom:0}.employee-form .actions{margin-top:20px}
+.legacy-accounts{border:1px solid var(--line);border-radius:8px;padding:16px;margin:18px 0}
+.employee-table-wrap{max-width:100%;overflow-x:auto;margin-top:16px}
+.employee-table{width:100%;min-width:690px;border-collapse:collapse;text-align:left;font-size:12px}
+.employee-table th{background:#f1f3f5;color:#515b64;font-weight:600}
+.employee-table th,.employee-table td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.employee-table td:nth-child(3){overflow-wrap:anywhere;max-width:220px}
+.employee-table .actions{gap:6px 12px}.employee-table .textbutton{white-space:nowrap;min-height:32px}
+.employee-status{font-size:11px;white-space:nowrap;padding:4px 7px;border-radius:4px;display:inline-block}
+.employee-status.enabled{background:#eaf5ef;color:#216747}.employee-status.disabled{background:#f8e9e8;color:#a03b36}
+.employee-password-hint{display:block;margin-top:7px;font-size:10px;color:var(--muted)}
+@media(max-width:760px){.employee-heading{flex-direction:column}.employee-heading>.primary{width:100%}.employee-form{padding:15px}.employee-form .formrow{flex-direction:column;gap:0}.employee-table{min-width:650px}}
