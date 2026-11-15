@@ -47,7 +47,7 @@ main{padding-top:28px}.pageintro{margin-bottom:24px}.pageintro h1{font-size:30px
 .sheet{border-radius:12px}.sheethead h2{color:#275e88}.notice{border-radius:6px}.timeline>div{border-left-color:#c9dfef}.timeline small{color:#64798c;line-height:1.6}.timeline p{color:#22465f;font-size:13px}.member{overflow-wrap:anywhere}.hint{line-height:1.65}
 .loginpage{background:#edf2f6;position:relative;isolation:isolate;padding:48px 5vw;justify-content:flex-end}
 .loginpage:before{content:'';position:absolute;z-index:-2;inset:0 44% 0 0;background:linear-gradient(0deg,#14232ee8,#14232e35),url('/makino-machining.jpg') center/cover}
-.loginpage:after{content:'MAKINO / FSE HCM\A Sẵn sàng vật tư.\A Chủ động công việc.';white-space:pre-line;position:absolute;left:6vw;bottom:12vh;right:50%;color:white;font-weight:700;font-size:clamp(22px,2.9vw,43px);line-height:1.55;letter-spacing:-.6px}
+.loginpage:after{content:'MAKINO VIET NAM\A Tools For Every Engineer.';white-space:pre-line;position:absolute;left:6vw;bottom:12vh;right:50%;color:white;font-weight:700;font-size:clamp(22px,2.9vw,43px);line-height:1.55;letter-spacing:-.6px}
 .loginbox{margin-right:2vw;max-width:440px;border-radius:10px;box-shadow:0 20px 65px #18344312;border-top:4px solid #317fbb;padding:32px}.loginbox h1{color:#275b83}.loginroles{border-radius:6px}.loginroles button{border-radius:4px}.loginbox label{color:#334f64}
 @media(min-width:761px) and (max-width:1100px){.hero-copy{width:72%;padding:27px}.hero h2{font-size:28px}.loginbox{max-width:390px;margin-right:0}.loginpage:before{right:43%}.loginpage:after{font-size:26px;right:50%}}
 @media(max-width:760px){
@@ -149,3 +149,31 @@ main{padding-top:28px}.pageintro{margin-bottom:24px}.pageintro h1{font-size:30px
 .employee-status.enabled{background:#eaf5ef;color:#216747}.employee-status.disabled{background:#f8e9e8;color:#a03b36}
 .employee-password-hint{display:block;margin-top:7px;font-size:10px;color:var(--muted)}
 @media(max-width:760px){.employee-heading{flex-direction:column}.employee-heading>.primary{width:100%}.employee-form{padding:15px}.employee-form .formrow{flex-direction:column;gap:0}.employee-table{min-width:650px}}
+
+/* Sign-in uses two independent columns, so the card never overlaps the photo. */
+.loginpage.signin-page{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr);align-items:stretch;justify-content:initial;min-height:100svh;padding:0;background:#f2f3f4}
+.signin-page:before,.signin-page:after{display:none}
+.login-visual{display:grid;place-items:center;min-width:0;min-height:100svh;padding:36px 24px;background:linear-gradient(#10121470,#101214b8),url('/makino-machining.jpg') center/cover;filter:grayscale(1)}
+.login-message{width:100%;max-width:620px;text-align:center;color:#fff;text-shadow:0 2px 20px #0008}
+.login-message h2{font-size:clamp(23px,2.7vw,40px);font-weight:750;line-height:1.2;letter-spacing:.8px;margin:0 0 16px;color:#fff}
+.login-message p{font-size:clamp(15px,1.45vw,21px);font-weight:400;line-height:1.5;letter-spacing:.3px;margin:0;color:#f0f1f2}
+.signin-page .loginbox{align-self:center;justify-self:center;width:calc(100% - 48px);max-width:440px;margin:24px;padding:24px 30px 28px;border-radius:14px;box-shadow:0 16px 48px #18232e0b}
+.signin-page .loginbox>img{width:176px;height:74px;object-fit:cover;margin:0 auto 6px}
+.signin-page .loginbox>.eyebrow{font-size:clamp(18px,1.7vw,23px);font-weight:750;letter-spacing:1px;line-height:1.35;text-align:center;color:var(--blue);margin:0 0 10px}
+.signin-page .loginbox h1{font-size:30px;line-height:1.2;letter-spacing:-.6px;text-align:center;margin:0 0 22px;color:#292c2f}
+.signin-page .loginroles{margin:0 0 20px}
+.signin-page .loginbox label{margin-top:15px}
+.signin-page .loginbox .hint{margin:13px 0;font-size:11px}
+.signin-page .loginbox>small{margin-top:18px;line-height:1.6}
+@media(max-width:760px){
+ .loginpage.signin-page{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;background:#f2f3f4}
+ .login-visual{min-height:190px;padding:32px 20px 42px;flex-shrink:0}
+ .login-message h2{font-size:clamp(22px,6vw,29px);margin-bottom:10px;letter-spacing:.5px}
+ .login-message p{font-size:15px}
+ .signin-page .loginbox{position:relative;z-index:1;align-self:center;width:calc(100% - 32px);max-width:420px;margin:-18px 16px 24px;padding:20px 22px 24px}
+ .signin-page .loginbox>img{width:150px;height:58px;margin-bottom:6px}
+ .signin-page .loginbox>.eyebrow{font-size:19px;letter-spacing:.7px;margin-bottom:8px}
+ .signin-page .loginbox h1{font-size:26px;margin-bottom:20px}
+ .signin-page .loginroles{margin-bottom:18px}
+ .signin-page .loginbox input{font-size:16px}
+}
