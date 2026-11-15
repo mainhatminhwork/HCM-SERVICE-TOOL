@@ -27,5 +27,7 @@
       "*/5 * * * *"
     ]
   },
-  "keep_vars": true
+  "keep_vars": true,
+  "workers_dev": true,
+  "preview_urls": false
 }
