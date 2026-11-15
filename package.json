@@ -10,7 +10,7 @@
     "build": "node scripts/build.mjs",
     "deploy": "wrangler deploy --config dist/server/wrangler.json",
     "db:generate": "drizzle-kit generate",
-    "test": "node --experimental-strip-types tests/operations.mjs && node --experimental-strip-types tests/auth.mjs && node --experimental-strip-types tests/profile-auth.mjs && node --experimental-strip-types tests/admin-password.mjs && node --experimental-strip-types tests/categories.mjs",
+    "test": "node --experimental-strip-types tests/operations.mjs && node --experimental-strip-types tests/auth.mjs && node --experimental-strip-types tests/profile-auth.mjs && node --experimental-strip-types tests/admin-password.mjs && node --experimental-strip-types tests/categories.mjs && node --experimental-strip-types tests/overview.mjs",
     "auth:setup": "node scripts/setup-auth.mjs",
     "local": "node scripts/local.mjs"
   },

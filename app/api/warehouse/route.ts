@@ -4,6 +4,7 @@ import { sameOrigin } from '../../../lib/auth-core';
 import { emptyState,State } from '../../../lib/model';
 import { emailOverview } from '../../../lib/mail';
 import { mutate } from '../../../lib/operations';
+import { warehouseOverview } from '../../../lib/overview';
 export const dynamic='force-dynamic';
 export async function GET(){return handle();}
 export async function POST(req:Request){return handle(req);}
@@ -22,6 +23,6 @@ async function handle(req?:Request){
  mutate(s,a,u,admin);
  const serialized=JSON.stringify(s);if(new TextEncoder().encode(serialized).length>1800000)return Response.json({error:'Dữ liệu bản thử đã gần giới hạn. Cần nâng cấp cấu trúc lưu trữ trước khi tiếp tục.'},{status:413});const result=await db.prepare('UPDATE warehouse SET data=?,revision=revision+1 WHERE id=? AND revision=?').bind(serialized,'main',row.revision).run();if(!result.meta.changes)return Response.json({error:'Kho vừa thay đổi. Vui lòng tải lại và thử lại.'},{status:409});}
  const email=admin?await emailOverview(env as Cloudflare.Env,s.outbox):{configured:false,message:'',outbox:[]};
- return Response.json({items:s.items.filter(i=>!i.deleted),categories:s.categories||[...new Set(['Dụng cụ','Thiết bị đo','Phụ kiện',...s.items.map(i=>i.category)])],orders:admin?s.orders:s.orders.filter(o=>o.userId===u.userId),members:admin?s.members:[],recipients:admin?s.recipients:[],audit:admin?s.audit.slice(0,200):[],outbox:email.outbox,emailConfigured:email.configured,emailSetupMessage:email.message,user:u,revision:row.revision},{headers:{'Cache-Control':'no-store'}});
+ return Response.json({overview:warehouseOverview(s),items:s.items.filter(i=>!i.deleted),categories:s.categories||[...new Set(['Dụng cụ','Thiết bị đo','Phụ kiện',...s.items.map(i=>i.category)])],orders:admin?s.orders:s.orders.filter(o=>o.userId===u.userId),members:admin?s.members:[],recipients:admin?s.recipients:[],audit:admin?s.audit.slice(0,200):[],outbox:email.outbox,emailConfigured:email.configured,emailSetupMessage:email.message,user:u,revision:row.revision},{headers:{'Cache-Control':'no-store'}});
  }catch(error){console.error('Warehouse operation failed',error instanceof Error?error.name:'Unknown');return Response.json({error:error instanceof Error&&!(error.message.includes('D1')||error.message.includes('SQL'))?error.message:'Chưa thiết lập xong database cloud. Kiểm tra migration.'},{status:400});}
 }

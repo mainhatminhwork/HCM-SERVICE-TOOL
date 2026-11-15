@@ -4,6 +4,8 @@
 
 ## Chức năng
 
+- Tab **Tổng Quan** mở đầu cho cả User và Admin: xem vị trí/người giữ đồ nghề, nhắc hạn theo phiếu mượn; nhấp phiếu để xem các vật tư chưa trả. Bảng vị trí hiển thị 5 mục trong khung cuộn, hỗ trợ chuột và vuốt trên điện thoại.
+- **Quản lí Kho** và danh mục chỉnh sửa chỉ hiển thị với Admin. User chỉ được xem bảng tổng quan chung và thao tác trên phiếu của chính mình.
 - Quản lý vật tư, phân loại, vị trí, số lượng, tình trạng và ảnh.
 - Mượn trực tiếp, trả toàn bộ hoặc một phần; theo dõi số lượng cần sửa.
 - Theo dõi hạn trả, yêu cầu và duyệt gia hạn, lịch sử và nhật ký kho.
@@ -73,3 +75,9 @@ Mật khẩu mới chỉ lưu dưới dạng PBKDF2 trong bảng D1 riêng **adm
 ## Quản lý phân loại vật tư
 
 Admin vào **Quản lí Kho → Quản lý phân loại**, hoặc **Danh mục vật tư → Quản lý phân loại** để thêm, đổi tên hoặc xóa nhóm. Đổi tên cập nhật nhóm trên các vật tư nhưng giữ mã và lịch sử. Nhóm trống được xóa trực tiếp; nhóm còn vật tư phải chọn nhóm nhận trước khi xác nhận chuyển và xóa. Luôn giữ ít nhất một phân loại.
+
+## Theo dõi vị trí và hạn trả
+
+Vị trí đồ đang mượn lấy từ trường **Job** (công ty/nơi sử dụng) trên phiếu; vị trí đồ tại kho lấy từ vị trí vật tư do Admin nhập. Đây là nơi được khai báo, không phải định vị tự động. Sau khi trả đồ hoặc duyệt gia hạn, bảng được tính lại từ số lượng chưa trả và hạn trả đã duyệt. Một phiếu có nhiều hạn trả được nhắc theo hạn gần nhất của phần chưa trả.
+
+Các User xem được mã phiếu, tên người mượn, nơi sử dụng, mã vật tư, số lượng còn mượn và hạn trả của phiếu đang lưu hành. Bảng tổng quan chung không chia sẻ email, ghi chú, nội dung công việc hoặc lịch sử riêng của phiếu. Quyền trả/gia hạn vẫn kiểm tra chủ phiếu trên máy chủ. Nếu một mã vật tư đang đại diện cho nhiều chiếc, bảng hiển thị số lượng theo từng vị trí/phiếu, không tự tạo mã riêng cho các chiếc chưa được đăng ký riêng.

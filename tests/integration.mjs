@@ -101,6 +101,14 @@ try{
  x=await employee({action:'create',code:'NOEMAIL',name:'No Email Person',email:'',password:'initial-pass-2'});assert.equal(x.r.status,200);x=await login('NOEMAIL','initial-pass-2');let other=x.cookie;
  x=await call('/api/password',{currentPassword:'initial-pass-2',newPassword:'other-new-pass'},other);assert.equal(x.r.status,200);other=x.cookie;
  x=await call('/api/warehouse',undefined,other);assert.equal(x.j.user.email,'');assert.equal(x.j.orders.length,0);
+ assert.equal(x.j.overview.loans.length,1);assert.equal(x.j.overview.loans[0].id,orderId);
+ assert.equal(x.j.overview.loans[0].borrower,'Nguyễn Văn An');
+ assert.equal(x.j.overview.loans[0].location,'Job A');assert.equal(x.j.overview.loans[0].lines[0].quantity,1);
+ assert.equal(x.j.overview.counts.borrowed,1);assert.equal(x.j.overview.counts.available,2);
+ for(const field of ['userId','userEmail','key','history','purpose','returnRequest'])assert.equal(field in x.j.overview.loans[0],false);
+ assert.equal((await call('/api/warehouse',{type:'editItem',id:itemId,item:{name:'Denied',total:3}},other)).r.status,400);
+ assert.equal((await call('/api/warehouse',{type:'adjust',id:itemId,delta:1,reason:'Denied'},other)).r.status,400);
+ ok(true,'Shared overview shows another engineer/location without exposing private order fields or granting warehouse permissions');
  assert.equal((await call('/api/warehouse',{type:'return',id:orderId,key:'unauthorized',lines:[{itemId,qty:1}]},other)).r.status,400);
  assert.equal((await call('/api/employees',{action:'setActive',id,active:true},other)).r.status,403);
  ok(true,'Email is optional; employees cannot administer accounts or access other loans');
