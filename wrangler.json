@@ -27,11 +27,5 @@
       "*/5 * * * *"
     ]
   },
-  "keep_vars": true,
-  "r2_buckets": [
-    {
-      "binding": "BUCKET",
-      "bucket_name": "hcm-servicetool-images"
-    }
-  ]
+  "keep_vars": true
 }
