@@ -1,5 +1,5 @@
 {
-  "name": "makino-kho-copy",
+  "name": "hcm-servicetool",
   "main": "worker/index.ts",
   "compatibility_date": "2026-05-15",
   "compatibility_flags": [
@@ -17,8 +17,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "makino-kho-copy-db",
-      "database_id": "00000000-0000-4000-8000-000000000000",
+      "database_name": "hcm-servicetool-db",
+      "database_id": "8e8edd0d-2a2e-4782-b0ca-66f357c2627e",
       "migrations_dir": "drizzle"
     }
   ],
@@ -31,7 +31,7 @@
   "r2_buckets": [
     {
       "binding": "BUCKET",
-      "bucket_name": "makino-kho-copy-images"
+      "bucket_name": "hcm-servicetool-images"
     }
   ]
 }
