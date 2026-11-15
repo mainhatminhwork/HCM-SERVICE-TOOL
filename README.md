@@ -34,7 +34,7 @@ Cần Cloudflare Workers, D1 và R2. GitHub lưu mã nguồn; GitHub Pages khôn
 
 1. Kết nối kho này với Cloudflare Workers: nhánh `main`, build `npm run build`, deploy `npm run deploy`.
 2. Tạo database D1 mới. Điền tên và `database_id` thật vào binding `DB` trong **wrangler.json**. ID toàn số 0 là giá trị giữ chỗ.
-3. Áp dụng các migration trong **drizzle/** theo thứ tự `0000`, `0001`, `0002` cho database mới. Bảng nhân viên cũng được khởi tạo tự động, không xóa hay nạp lại dữ liệu kho.
+3. Áp dụng các migration trong **drizzle/** theo thứ tự `0000`, `0001`, `0002`, `0003` cho database mới. Bảng nhân viên cũng được khởi tạo tự động, không xóa hay nạp lại dữ liệu kho.
 4. Tạo bucket R2 riêng, điền tên vào binding `BUCKET`.
 5. Chạy `npm run auth:setup` để tạo mật khẩu Admin và hai giá trị cấu hình. Lưu **SESSION_SECRET** và **ADMIN_PASSWORD_HASH** dưới dạng Secret runtime trên Cloudflare, sau đó deploy lại. Không đưa chúng lên GitHub.
 6. Nếu cần email, cấu hình Apps Script và **MAIL_WEBHOOK_URL**, **MAIL_SECRET** riêng theo [GMAIL-SETUP.md](GMAIL-SETUP.md). Đổi đường dẫn mở ứng dụng trong **lib/mail.ts** sang địa chỉ bản triển khai của bạn trước khi bật email.
@@ -63,3 +63,9 @@ Mã nguồn và ảnh gốc: **lekhanhtrinh08042026-blip/QuanLyTool**, commit **
 Sau khi cập nhật, đăng nhập User chỉ chấp nhận mã nhân viên và mật khẩu; các phiên User theo Gmail cũ không còn hiệu lực. Mật khẩu Admin được giữ nguyên và tài khoản hiển thị là **Admin**.
 
 Vào **Cá nhân → Quản lý nhân viên → Tài khoản Gmail cũ**, chọn **Cấp mã nhân viên** để gắn tài khoản mới với lịch sử cũ. Không tạo tài khoản độc lập nếu cần giữ liên kết lịch sử. Email nhận thông báo có thể để trống hoặc đổi sau; đổi mã/email không thay đổi quyền sở hữu đơn đã mượn. Không có thao tác xóa nhân viên; dùng khóa để giữ lịch sử.
+
+## Đổi mật khẩu Admin
+
+Đăng nhập tab **Admin**, vào **Cá nhân → Đổi mật khẩu Admin**. Nhập mật khẩu hiện tại, mật khẩu mới (8–200 ký tự), và nhập lại mật khẩu mới. Các phiên Admin cũ sẽ hết hiệu lực; phiên vừa đổi được tiếp tục sử dụng.
+
+Mật khẩu mới chỉ lưu dưới dạng PBKDF2 trong bảng D1 riêng **admin_credentials**. Secret Cloudflare **ADMIN_PASSWORD_HASH** dùng để khởi tạo và khôi phục: khi quên mật khẩu, tạo hash mới và cập nhật Secret này trên Cloudflare, rồi deploy lại. Hash khởi tạo không còn được dùng để đăng nhập sau khi đã đổi mật khẩu trong app, trừ khi người quản trị chủ động thay Secret Cloudflare. Không đưa mật khẩu thật vào mã nguồn hoặc GitHub.

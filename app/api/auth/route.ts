@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { signingSecret } from '../../../lib/runtime-auth';
+import { adminPasswordHash } from '../../../lib/admin-password';
 import { cookie,verifyPassword,passwordVersion,signSession,sameOrigin,validPasswordHash,temporaryAdminDeadline } from '../../../lib/auth-core';
 import { employeeCode,ensureEmployees,employeeUser } from '../../../lib/employees';
 import type { Employee } from '../../../lib/employees';
@@ -20,7 +21,7 @@ export async function POST(req:Request){
   const body=JSON.parse(raw),secure=new URL(req.url).protocol==='https:';
   if(body.action==='logout')return json({ok:true},200,{'Set-Cookie':cookie('',secure,0)});
   if(!['admin','borrower'].includes(body.role))return json({error:'Vai trò không hợp lệ'},400);
-  const deadline=temporaryAdminDeadline(e.TEMP_ADMIN_NO_PASSWORD_UNTIL),temporaryAdmin=body.role==='admin'&&deadline>0,passwordHash=e.ADMIN_PASSWORD_HASH||'';
+  const deadline=temporaryAdminDeadline(e.TEMP_ADMIN_NO_PASSWORD_UNTIL),temporaryAdmin=body.role==='admin'&&deadline>0,passwordHash=await adminPasswordHash(e);
   if(!e.DB)return json({error:'Chưa kết nối database. Admin cần hoàn tất thiết lập.'},503);
   const secret=await signingSecret(e);
   if(!secret||(!e.ADMIN_PASSWORD_HASH&&!deadline))return json({error:'Chưa cấu hình đăng nhập. Admin cần kiểm tra cấu hình.'},503);

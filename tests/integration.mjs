@@ -105,5 +105,17 @@ try{
  assert.equal((await call('/api/profile',{displayName:'Bypass'},user)).r.status,410);
  const cross=await fetch(base+'/api/employees',{method:'POST',headers:{Origin:'https://evil.example',Cookie:admin,'Content-Type':'application/json'},body:JSON.stringify({action:'setActive',id,active:false})});assert.equal(cross.status,403);
  ok(true,'Old profile registration is disabled and cross-origin mutations are denied');
+ assert.equal((await call('/api/password',{currentPassword:'wrong',newPassword:'admin-next-password'},admin)).r.status,400);
+ assert.equal((await call('/api/password',{currentPassword:'integration-only-pass',newPassword:'123'},admin)).r.status,400);
+ assert.equal((await call('/api/password',{currentPassword:'integration-only-pass',newPassword:'integration-only-pass'},admin)).r.status,400);
+ x=await call('/api/password',{currentPassword:'integration-only-pass',newPassword:'admin-next-password'},admin);assert.equal(x.r.status,200,JSON.stringify(x.j));const changedAdmin=x.cookie;
+ assert.equal((await call('/api/warehouse',undefined,admin)).r.status,401);
+ assert.equal((await call('/api/password',{currentPassword:'admin-next-password',newPassword:'another-password'},admin)).r.status,401);
+ assert.equal((await call('/api/auth',{role:'admin',password:'integration-only-pass'})).r.status,401);
+ x=await call('/api/auth',{role:'admin',password:'admin-next-password'});assert.equal(x.r.status,200);
+ assert.equal((await call('/api/employees',undefined,x.cookie)).r.status,200);
+ assert.equal((await call('/api/warehouse',undefined,changedAdmin)).j.user.displayName,'Admin');
+ assert.equal((await call('/api/warehouse',undefined,user)).r.status,200);
+ ok(true,'Admin password change rejects invalid current/short/same passwords, revokes old sessions and survives new logins without affecting employees');
  console.log('PASS '+checks+' integrated employee, security, migration and warehouse scenarios.');
 }catch(error){console.log(output.slice(-2500));throw error;}finally{if(process.platform==='win32')spawnSync('taskkill.exe',['/PID',String(child.pid),'/T','/F'],{stdio:'ignore'});else child.kill();}
