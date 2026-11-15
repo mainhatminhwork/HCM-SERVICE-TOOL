@@ -69,3 +69,7 @@ Vào **Cá nhân → Quản lý nhân viên → Tài khoản Gmail cũ**, chọn
 Đăng nhập tab **Admin**, vào **Cá nhân → Đổi mật khẩu Admin**. Nhập mật khẩu hiện tại, mật khẩu mới (8–200 ký tự), và nhập lại mật khẩu mới. Các phiên Admin cũ sẽ hết hiệu lực; phiên vừa đổi được tiếp tục sử dụng.
 
 Mật khẩu mới chỉ lưu dưới dạng PBKDF2 trong bảng D1 riêng **admin_credentials**. Secret Cloudflare **ADMIN_PASSWORD_HASH** dùng để khởi tạo và khôi phục: khi quên mật khẩu, tạo hash mới và cập nhật Secret này trên Cloudflare, rồi deploy lại. Hash khởi tạo không còn được dùng để đăng nhập sau khi đã đổi mật khẩu trong app, trừ khi người quản trị chủ động thay Secret Cloudflare. Không đưa mật khẩu thật vào mã nguồn hoặc GitHub.
+
+## Quản lý phân loại vật tư
+
+Admin vào **Quản lí Kho → Quản lý phân loại**, hoặc **Danh mục vật tư → Quản lý phân loại** để thêm, đổi tên hoặc xóa nhóm. Đổi tên cập nhật nhóm trên các vật tư nhưng giữ mã và lịch sử. Nhóm trống được xóa trực tiếp; nhóm còn vật tư phải chọn nhóm nhận trước khi xác nhận chuyển và xóa. Luôn giữ ít nhất một phân loại.

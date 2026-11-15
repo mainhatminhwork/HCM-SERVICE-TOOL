@@ -76,6 +76,15 @@ try{
  x=await call('/api/warehouse',{type:'return',id:orderId,key:'partial',lines:[{itemId,qty:1,bad:0}]},user);assert.equal(x.r.status,200);assert.equal(x.j.items[0].available,2);
  x=await call('/api/export',undefined,admin);assert.equal(x.r.status,200);writeFileSync(runtime+'/sample.xlsx',x.bytes);
  ok(true,'Borrowing, partial returns, idempotency, and Excel still work with employee IDs');
+ assert.equal((await call('/api/warehouse',{type:'renameCategory',name:'Dụng cụ',newName:'Denied'},user)).r.status,400);
+ x=await call('/api/warehouse',{type:'renameCategory',name:'Dụng cụ',newName:'Dụng cụ bảo trì'},admin);assert.equal(x.r.status,200);assert.equal(x.j.items[0].category,'Dụng cụ bảo trì');assert.equal(x.j.items[0].id,itemId);assert.equal(x.j.items[0].available,2);
+ assert.equal((await call('/api/warehouse',{type:'deleteCategory',name:'Dụng cụ bảo trì'},admin)).r.status,400);
+ x=await call('/api/warehouse',{type:'deleteCategory',name:'Dụng cụ bảo trì',target:'Thiết bị đo'},admin);assert.equal(x.r.status,200);assert.ok(!x.j.categories.includes('Dụng cụ bảo trì'));assert.equal(x.j.items[0].category,'Thiết bị đo');assert.equal(x.j.items[0].id,itemId);assert.equal(x.j.items[0].available,2);
+ assert.ok(x.j.orders.some(o=>o.id===orderId));
+ await call('/api/warehouse',{type:'addCategory',name:'Nhóm trống'},admin);
+ x=await call('/api/warehouse',{type:'deleteCategory',name:'Nhóm trống'},admin);assert.equal(x.r.status,200);assert.ok(!x.j.categories.includes('Nhóm trống'));
+ ok(true,'Category rename and transfer/delete enforce Admin access and preserve stock and active loans');
+
  x=await employee({action:'resetPassword',id,password:'reset-pass-2'});assert.equal(x.r.status,200);assert.equal((await call('/api/warehouse',undefined,user)).r.status,401);
  assert.equal((await login('NV001','new-password-1')).r.status,401);
  x=await login('NV001','reset-pass-2');assert.equal(x.j.mustChangePassword,true);user=x.cookie;

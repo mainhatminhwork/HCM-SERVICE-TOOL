@@ -11,7 +11,26 @@ export function mutate(s:State,a:any,u:{userId:string;email:string;displayName:s
  if(a.type==='seed'){requireAdmin();if(s.items.length)fail('Kho đã có vật tư');s.items=samples();log('Thêm danh sách vật tư mẫu');return;}
  s.categories ??= [...new Set(['Dụng cụ','Thiết bị đo','Phụ kiện',...s.items.map(i=>i.category)])];
  const images=(v:any)=>{if(!Array.isArray(v)||v.length>20||v.some(x=>typeof x!=='string'||!/^\/api\/files\?id=[a-f0-9-]{36}$/.test(x)))fail('Ảnh hiện trạng không hợp lệ (tối đa 20 ảnh)');return v as string[];};
- if(a.type==='addCategory'){requireAdmin();const name=String(a.name||'').trim();if(!name||name.length>80)fail('Tên phân loại cần từ 1–80 ký tự');if(s.categories.some(c=>c.toLocaleLowerCase('vi')===name.toLocaleLowerCase('vi')))fail('Phân loại đã tồn tại');s.categories.push(name);log('Thêm phân loại '+name);return;}
+ const categoryKey=(name:string)=>name.normalize('NFC').toLocaleLowerCase('vi');
+ const categoryName=(value:unknown)=>{const name=typeof value==='string'?value.normalize('NFC').trim().replace(/\s+/g,' '):'';if(!name||name.length>80||/[\p{Cc}\p{Cf}]/u.test(name))fail('Tên phân loại cần từ 1–80 ký tự hợp lệ');if(categoryKey(name)===categoryKey('Tất cả'))fail('Tên “Tất cả” dành riêng cho bộ lọc. Hãy chọn tên khác.');return name;};
+ if(a.type==='addCategory'){requireAdmin();const name=categoryName(a.name);if(s.categories.some(c=>categoryKey(c)===categoryKey(name)))fail('Phân loại đã tồn tại');s.categories.push(name);log('Thêm phân loại '+name);return;}
+ if(a.type==='renameCategory'){
+  requireAdmin();if(typeof a.name!=='string'||!s.categories.includes(a.name))fail('Phân loại không còn tồn tại. Vui lòng tải lại kho.');
+  const name=categoryName(a.newName);if(s.categories.some(c=>c!==a.name&&categoryKey(c)===categoryKey(name)))fail('Phân loại đã tồn tại');
+  if(name===a.name)return;
+  s.categories=s.categories.map(c=>c===a.name?name:c);for(const i of s.items)if(i.category===a.name)i.category=name;
+  log('Đổi tên phân loại '+a.name+' → '+name);return;
+ }
+ if(a.type==='deleteCategory'){
+  requireAdmin();if(typeof a.name!=='string'||!s.categories.includes(a.name))fail('Phân loại không còn tồn tại. Vui lòng tải lại kho.');
+  if(s.categories.length<=1)fail('Cần giữ lại ít nhất một phân loại. Hãy thêm nhóm khác trước.');
+  const count=s.items.filter(i=>!i.deleted&&i.category===a.name).length;
+  if(count&&!a.target)fail('Phân loại còn '+count+' vật tư. Hãy chọn nhóm nhận vật tư trước khi xóa.');
+  if(a.target&&(typeof a.target!=='string'||a.target===a.name||!s.categories.includes(a.target)))fail('Nhóm nhận vật tư không hợp lệ.');
+  if(a.target)for(const i of s.items)if(i.category===a.name)i.category=a.target;
+  s.categories=s.categories.filter(c=>c!==a.name);
+  log('Xóa phân loại '+a.name+(count?' · Chuyển '+count+' vật tư sang '+a.target:''));return;
+ }
  if(a.type==='deleteItem'){requireAdmin();const i=item(a.id);if(s.orders.some(o=>!['completed','cancelled'].includes(o.status)&&o.lines.some(l=>l.itemId===i.id&&l.qty>l.returned)))fail('Vật tư còn trong đơn chưa hoàn tất, hãy trả hoặc hủy đơn trước');i.deleted=true;log('Xóa vật tư '+i.id+' · '+i.name);return;}
  if(a.type==='addItem'||a.type==='editItem'){
  requireAdmin();const x=a.item||{};const qty=Number(x.total);if(!Number.isSafeInteger(qty)||qty<0||qty>1000000)fail('Số lượng không hợp lệ');if(!x.name?.trim()||x.name.length>160)fail('Cần nhập tên vật tư dưới 160 ký tự');const cat=String(x.category||'Dụng cụ');if(!s.categories.includes(cat))fail('Phân loại chưa tồn tại');const pics=images(x.conditionImages||[]);const condition=String(x.condition||'Tốt').trim().slice(0,2000)||'Tốt';
