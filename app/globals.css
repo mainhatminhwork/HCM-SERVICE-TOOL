@@ -67,3 +67,66 @@ main{padding-top:28px}.pageintro{margin-bottom:24px}.pageintro h1{font-size:30px
 .brand img{display:block;width:176px;max-width:100%;height:80px;object-fit:cover;object-position:center}
 .brand>span{display:block;width:100%;margin:0;font-size:11px;font-weight:700;line-height:1.5;letter-spacing:1.1px;color:var(--deep);white-space:nowrap}
 .brand:after{content:'';position:absolute;bottom:-1px;left:50%;width:34px;height:3px;background:var(--blue);transform:translateX(-50%)}
+
+/* Makino reference palette: charcoal navigation, monochrome imagery, blue accents. */
+:root{--blue:#417fbe;--deep:#2e6399;--ink:#292c2f;--muted:#686e74;--line:#dfe1e3;--bg:#f5f5f5;--green:#24816b;--accent:#00a5bd}
+.sidebar,.topbar{background:#282b2d;border-color:#3a3e42}
+.brand{border-bottom-color:#44484c}
+.brand img,.mobilebrand img{filter:invert(1) hue-rotate(180deg);mix-blend-mode:screen}
+.brand>span{color:#f5f6f7}
+.brand:after{background:var(--blue)}
+.sidebar nav button{color:#c6c9cc}
+.sidebar nav button:hover{background:#34383c;color:#fff}
+.sidebar nav button.selected{background:#383e43;color:#fff}
+.sidebar nav button.selected:before{background:var(--accent)}
+.sidebar nav button b{background:#4b5660;color:#fff}
+.sidefoot{border-top-color:#44484c;color:#f5f6f7}
+.sidefoot small{color:#b9bec3}
+.sidefoot .avatar,.topright .avatar{background:#414c56;color:#e4effb}
+.breadcrumb,.online,.topright button{color:#d2d4d6}
+.pageintro h1{color:#292c2f}
+.pageintro .eyebrow{color:var(--blue)}
+.hero{background:#08090a;border-bottom-color:#393d41}
+.hero-copy{background:linear-gradient(90deg,#08090a 70%,#08090a00)}
+.hero-art:after{background:linear-gradient(90deg,#08090a 1%,#08090a22 48%,#00000022),linear-gradient(0deg,#00000080,transparent 65%)}
+.hero-art>img{filter:grayscale(1);opacity:.92}
+.hero-tag{color:#c8cdd1}
+.hero-tag span{background:var(--accent)}
+.hero h2,.hero h2 em{color:#fff}
+.hero p,.hero-stats small{color:#c8cdd1}
+.hero-stats strong{color:#fff}
+.catalog-head h2,.panel h2,.sheethead h2,.loginbox h1{color:var(--blue)}
+.catalog-head h2 span{background:#e8ebee;color:#555f68}
+.primary,.addbtn{background:var(--blue)}
+.primary:hover,.addbtn:hover{background:var(--deep)}
+.outline{border-color:#d9dde0;color:#47535e}
+.outline:hover{border-color:var(--blue);color:var(--deep)}
+.chips button{border-color:#dfe1e3;color:#656c73}
+.chips button.active,.picked-label{background:var(--blue);border-color:var(--blue);color:#fff}
+.itemcard,.panel,.ordercard{border-color:#dfe1e3;box-shadow:0 3px 14px #00000004}
+.itemcard:hover{border-color:#9baebf;box-shadow:0 9px 24px #0000000d}
+.itemcard.is-picked{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.art.blue,.art.mint,.art.sand{background:linear-gradient(135deg,#f2f3f4,#e3e5e7);color:#738291}
+.search,.filterbtn{border-color:#d9dde0}
+.empty{background:#ffffffb0;border-color:#d5dadd;color:#7e8c98}
+.panel h2:before{background:var(--blue)}
+.metric.active{background:#30363b;border-color:#30363b}
+.timeline p,.review-info strong{color:#3e4c58}
+.timeline small,.orderhead{color:#626e79}
+.pagefooter{color:#777e85}
+.loginpage{background:#f2f3f4}
+.loginpage:before{background:linear-gradient(0deg,#08090af0,#08090a45),url('/makino-machining.jpg') center/cover;filter:grayscale(1)}
+.loginbox{border-top-color:var(--blue)}
+.loginbox label{color:#414b54}
+@media(max-width:760px){
+ .topbar{background:#282b2d;border-top-color:var(--blue);border-bottom-color:#3a3e42}
+ .topright button{color:#d2d4d6}
+ .topright .avatar{background:#414c56;color:#e4effb}
+ .hero-copy{background:linear-gradient(90deg,#08090af5,#08090acc 65%,#08090a66)}
+ .hero-art>img{opacity:.75}
+ .bottomnav{background:#282b2df5;border-color:#44484c;box-shadow:0 -3px 18px #00000014}
+ .bottomnav button{color:#bec5cb}
+ .bottomnav button.active{color:#fff}
+ .bottomnav button.active:before{background:var(--accent)}
+ .loginpage{background:linear-gradient(#181a1c99,#181a1c99),url('/makino-machining.jpg') center/cover}
+}
